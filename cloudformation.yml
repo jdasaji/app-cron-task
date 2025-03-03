@@ -1,0 +1,63 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Resources:
+ # 📌 Repositorio ECR para almacenar imágenes de los Lambdas
+#    aws cloudformation create-stack --stack-name MiPipelineStack --template-body file://cloudformation/infraestructura.yml --capabilities CAPABILITY_NAMED_IAM   --capabilities CAPABILITY_NAMED_IAM  --region us-east-1
+  MyECRRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: mi-repo-ecr  # Cambia el nombre si lo deseas
+      ImageScanningConfiguration:
+        ScanOnPush: true  # Habilita escaneo de vulnerabilidades
+  MyPipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      Name: MiPipeline
+      RoleArn: arn:aws:iam::107340132840:role/policy-custom-pipeline  # Reemplaza con tu ARN
+      ArtifactStore:
+        Type: S3
+        Location: policy-custom-pipeline-s3  # Reemplaza con tu bucket
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: GitHubSource
+              ActionTypeId:
+                Category: Source
+                Owner: ThirdParty
+                Provider: GitHub
+                Version: "1"
+              Configuration:
+                Owner: jdasaji
+                Repo: timi-py-cf
+                Branch: master
+                OAuthToken: "{{resolve:secretsmanager:dev/py/test-file-GitHubToken}}"  # Usa Secrets Manager
+              OutputArtifacts:
+                - Name: SourceArtifact
+        - Name: Build
+          Actions:
+            - Name: BuildAction
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: "1"
+              Configuration:
+                ProjectName: MiProyectoDeCodeBuild
+              InputArtifacts:
+                - Name: SourceArtifact
+              OutputArtifacts:
+                - Name: BuildArtifact
+
+  MiProyectoDeCodeBuild:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: MiProyectoDeCodeBuild
+      ServiceRole: arn:aws:iam::107340132840:role/policy-custom-pipeline  # Asegúrate de que este rol tenga permisos para CodeBuild
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: "cicd/buildspec.yml"  # Cambia esto si el archivo está en otro lugar
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL #construye el computo con recursos basicos
+        Image: "aws/codebuild/standard:5.0"
+        Type: LINUX_CONTAINER
