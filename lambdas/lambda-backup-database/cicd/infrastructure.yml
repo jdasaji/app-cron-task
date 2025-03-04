@@ -1,5 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Resources:
+
  # 📌 Repositorio ECR para almacenar imágenes de los Lambdas
 #    aws cloudformation create-stack --stack-name MiPipelineStack --template-body file://cloudformation/infraestructura.yml --capabilities CAPABILITY_NAMED_IAM   --capabilities CAPABILITY_NAMED_IAM  --region us-east-1
   MyECRRepository:
@@ -48,6 +49,22 @@ Resources:
                 - Name: BuildArtifact
 
   MiProyectoDeCodeBuild:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: MiProyectoDeCodeBuild
+      ServiceRole: arn:aws:iam::107340132840:role/policy-custom-pipeline  # Asegúrate de que este rol tenga permisos para CodeBuild
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: "cicd/buildspec.yml"  # Cambia esto si el archivo está en otro lugar
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL #construye el computo con recursos basicos
+        Image: "aws/codebuild/standard:5.0"
+        Type: LINUX_CONTAINER
+
+
+MiProyectoDeCodeBuild:
     Type: AWS::CodeBuild::Project
     Properties:
       Name: MiProyectoDeCodeBuild

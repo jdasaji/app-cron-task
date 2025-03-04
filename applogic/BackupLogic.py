@@ -2,19 +2,16 @@
 import json
 import os
 import logging
-from dotenv import load_dotenv
+from common.helper import getDatetimeFormat
 
-from datetime import datetime
-
-from  infrastructure.firebase.FirebaseBackupInfra import  FirebaseBackupInfra
-from infrastructure.aws.BucketBaseInfra import BucketBaseInfra
+from adapters.firebase.FirebaseBackupInfra import FirebaseBackupInfra
+from adapters.aws.BucketBaseInfra import BucketBaseInfra
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-class BackupServices:
-
+class BackupLogic:
 
     def __init__(self):
         logger.info("Inicializando BackupServices...")
@@ -34,12 +31,6 @@ class BackupServices:
         getDataSerialize=json.dumps(firebaseBackupInfra.getDataForBackup())
 
         logger.info("backupServices:method - invoice s3%s",self.bucketName)
-        bucketBaseInfra.upload_to_s3(self.bucketName,"backup-"+self._getTimeDateAndTime()+".json",getDataSerialize,"application/json")
+        bucketBaseInfra.upload_to_s3(self.bucketName,"backup-"+getDatetimeFormat()+".json",getDataSerialize,"application/json")
         logger.info("backupServices:end")
         return None
-
-
-    def _getTimeDateAndTime(self):
-        # Obtener la fecha y hora actual con formato de minutos y segundos
-        ahora = datetime.now()
-        return ahora.strftime("%Y-%m-%d %H:%M:%S")

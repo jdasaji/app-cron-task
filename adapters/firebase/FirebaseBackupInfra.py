@@ -6,9 +6,17 @@ from firebase_admin import credentials, firestore
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-cred = credentials.Certificate("conf/py-test-firebase.json")
-firebase_admin.initialize_app(cred)
+base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+cred_path = os.path.join(base_dir, "conf", "py-test-firebase.json")
 
+if not firebase_admin._apps:    
+    logger.info(cred_path)
+    cred = credentials.Certificate(cred_path)
+    firebase_admin.initialize_app(cred,{'timeout': 120})
+    logger.info("Firebase inicializado correctamente.")
+else:
+    logger.info("Firebase ya estaba inicializado.")
+    
 class FirebaseBackupInfra:
     
     def __init__(self, db_url=None):
@@ -38,7 +46,4 @@ class FirebaseBackupInfra:
             logger.info("firebaseBackupInfra:end")
             return backup_data
         except Exception as e:
-            logger.error("firebaseBackupInfra:error %s",{e})
-       
-
-# ins=FirebaseBackupInfra()  logger.info("response:%s", ins.getDataForBackup())
+            logger.error("firebaseBackupInfra:error %s",{e})       
